@@ -1,65 +1,71 @@
-const promptTemplate = document.getElementById('prompt-option');
-const promptOptionsDisplay = document.getElementById('prompt-options-display');
 const promptTitleElement = document.getElementById('prompt-title');
 const promptTextarea = document.getElementById('prompt');
 const askButton = document.getElementById('askChatGPT');
 const saveButton = document.getElementById('saveNewPrompt');
-const useButton = document.getElementById('usePrompt');
-const deleteButton = document.getElementById('deletePrompt');
 const viewButton = document.getElementById('showSavedPrompts');
+const savedPromptsModal = document.getElementById('savedPromptsModal');
+const closeModalButton = document.getElementById('closeModal');
+const promptTemplate = document.getElementById('prompt-option');
+const promptOptionsDisplay = document.getElementById('prompt-options-display');
+const savePromptModal = document.getElementById('savePromptModal');
+const closeSavePromptModalButton = document.getElementById('closeSavePromptModal');
+const savePromptConfirmButton = document.getElementById('savePromptConfirm');
+const promptTagInput = document.getElementById('promptTag');
+const fieldError = document.getElementById('fieldError');
+const promptTitleInput = document.getElementById('promptTitleInput');
+const promptDescriptionInput = document.getElementById('promptDescription');
+const prevPageButton = document.getElementById('prevPage');
+const nextPageButton = document.getElementById('nextPage');
+const pageInfo = document.getElementById('pageInfo');
 
-const selectPrompt = (promptId) => {
-    fetch(`http://localhost:8000/composite_prompts/${promptId}/expanded`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(prompt => {
-            promptTextarea.value = prompt.fragments.reduce((acc, fragment) => {
-                return `${acc} \n\n${fragment.content}`;
-            }, '');
-            window.location.href = 'index.html';
-        })
-        .catch(error => console.error('Error fetching prompt:', error));
-}
+let currentPage = 1;
+const itemsPerPage = 5;
 
-const delelePrompt = (promptId) => {
-    fetch(`http://localhost:8000/composite_prompts/${promptId}`, {
-        method: 'DELETE',
-    })
-        .then(res => res.ok ? console.log('Prompt deleted') : console.log(`Error: ${res.status}`))
-        .then(() => {
-            window.location.reload();
-        })
-        .catch(err => console.error(err));
+const loadPrompts = () => {
+    promptOptionsDisplay.innerHTML = '';
+    let prompts = JSON.parse(localStorage.getItem('prompts')) || [];
+    const totalPages = Math.ceil(prompts.length / itemsPerPage);
+
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const promptsToDisplay = prompts.slice(startIndex, endIndex);
+
+    for (const prompt of promptsToDisplay) {
+        const template = promptTemplate.content.cloneNode(true);
+        template.querySelector('h2').innerText = prompt.title;
+        template.querySelector('p').innerText = prompt.description;
+        const usePromptButton = template.querySelector('#usePrompt');
+        const deletePromptButton = template.querySelector('#deletePrompt');
+        if (usePromptButton) {
+            usePromptButton.addEventListener('click', () => {
+                promptTextarea.value = prompt.content;
+                closeModal(savedPromptsModal);
+            });
+        }
+
+        if (deletePromptButton) {
+            deletePromptButton.addEventListener('click', () => {
+                deletePrompt(prompt.id);
+            });
+        }
+        promptOptionsDisplay.appendChild(template);
+    }
+
+    pageInfo.innerText = `Page ${currentPage} of ${totalPages}`;
+    prevPageButton.disabled = currentPage === 1;
+    nextPageButton.disabled = currentPage === totalPages;
 };
 
-fetch(`http://localhost:8000/composite_prompts`)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(composite_prompts => {
-        for (const composite_prompt of composite_prompts) {
-            const template = promptTemplate.content.cloneNode(true);
-            template.querySelector('h2').innerText = composite_prompt.title;
-            template.querySelector('p').innerText = composite_prompt.description;
-            const usePromptButton = template.querySelector('#usePrompt');
-            const deletePromptButton = template.querySelector('#deletePrompt');
-            if (usePromptButton) {
-                usePromptButton.addEventListener('click', () => { selectPrompt(composite_prompt.id) });
-            }
-            if (deletePromptButton) {
-                deletePromptButton.addEventListener('click', () => { delelePrompt(composite_prompt.id) });
-            }
-            promptOptionsDisplay.appendChild(template);
-        }
-    })
-    .catch(error => console.error('Error fetching composite prompts:', error));
+const deletePrompt = (promptId) => {
+    let prompts = JSON.parse(localStorage.getItem('prompts')) || [];
+    prompts = prompts.filter(prompt => prompt.id !== promptId);
+    localStorage.setItem('prompts', JSON.stringify(prompts));
+    loadPrompts();
+};
+
+const closeModal = (modal) => {
+    modal.classList.add('hidden');
+};
 
 askButton.addEventListener('click', () => {
     if (promptTextarea.value === '') {
@@ -69,64 +75,67 @@ askButton.addEventListener('click', () => {
 });
 
 viewButton.addEventListener('click', () => {
-    window.location.href = 'prompts.html';
+    loadPrompts();
+    savedPromptsModal.classList.remove('hidden');
 });
 
-saveButton.addEventListener('click', async () => {
-    const newPrompt = await fetch(`http://localhost:8000/composite_prompts`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            author_id: 1,
-            title: 'New Prompt',
-            description: 'default description',
-        }),
-    })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            window.location.reload();
-            return data;
-        })
-        .catch(error => console.error('Error saving new prompt:', error));
+closeModalButton.addEventListener('click', () => closeModal(savedPromptsModal));
 
-    const newFragment = await fetch(`http://localhost:8000/prompt_fragments`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            author_id: 1,
-            content: promptTextarea.value,
-            description: 'default description fragment',
-        }),
-    })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Success:', data);
-            return data;
-        })
-        .catch(error => console.error('Error saving new fragment:', error));
+saveButton.addEventListener('click', () => {
+    savePromptModal.classList.remove('hidden');
+});
 
-    fetch(`http://localhost:8000/composite_prompts/${newPrompt.id}/fragments/${newFragment.id}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            order_index: 0,
-        }),
-    })
-    .catch(error => console.error('Error linking prompt and fragment:', error));
+closeSavePromptModalButton.addEventListener('click', () => closeModal(savePromptModal));
+
+savePromptConfirmButton.addEventListener('click', () => {
+    const tag = promptTagInput.value;
+    const title = promptTitleInput.value;
+    const description = promptDescriptionInput.value;
+    const content = promptTextarea.value;
+
+    if (!title || !description) {
+        fieldError.classList.remove('hidden');
+        setTimeout(() => {
+            fieldError.classList.add('hidden');
+        }, 3000);
+        return;
+    }
+
+    const newPrompt = {
+        id: Date.now(),
+        tag,
+        title,
+        description,
+        content,
+    };
+
+    let prompts = JSON.parse(localStorage.getItem('prompts')) || [];
+    prompts.push(newPrompt);
+    localStorage.setItem('prompts', JSON.stringify(prompts));
+
+    closeModal(savePromptModal);
+    window.location.reload();
+});
+
+promptTextarea.addEventListener('input', () => {
+    saveButton.disabled = !promptTextarea.value.trim();
+    savePromptConfirmButton.disabled = !promptTextarea.value.trim();
+});
+
+saveButton.disabled = !promptTextarea.value.trim();
+
+prevPageButton.addEventListener('click', () => {
+    if (currentPage > 1) {
+        currentPage--;
+        loadPrompts();
+    }
+});
+
+nextPageButton.addEventListener('click', () => {
+    let prompts = JSON.parse(localStorage.getItem('prompts')) || [];
+    const totalPages = Math.ceil(prompts.length / itemsPerPage);
+    if (currentPage < totalPages) {
+        currentPage++;
+        loadPrompts();
+    }
 });

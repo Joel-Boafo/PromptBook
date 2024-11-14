@@ -1,0 +1,12 @@
+/* Modal styles */
+.modal {
+    display: none;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal.fixed {
+    display: flex;
+}
