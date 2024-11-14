@@ -1,11 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
-</head>
-<body>
-    
-</body>
+    <script src="script.js" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body>
+    <div class=" bg-gray-100 px-2 py-2 w-8/12 mx-auto mt-12 rounded-md">
+        <h1 class="text-center font-semibold text-xl">Prompt enhancer</h1>
+        <hr>
+        <h1 class="font-semibold" id="prompt-title"></h1>
+        <textarea class="px-2 py-2" name="prompt" id="prompt" cols="80" rows="20"></textarea>
+        <button class="px-2 py-2 rounded-md bg-green-500 ml-3 text-white" id="askChatGPT">Ask ChatGPT</button>
+        <button class="px-2 py-2 rounded-md bg-blue-500 ml-3 text-white" id="saveNewPrompt">Save as new prompt</button>
+        <button class="px-2 py-2 rounded-md bg-red-500 ml-3 text-white" id="showSavedPrompts">View available prompts</button>
+    </div>
+  </body>
 </html>
