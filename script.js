@@ -60,10 +60,21 @@ const loadPrompts = () => {
 };
 
 const deletePrompt = (promptId) => {
-    let prompts = JSON.parse(localStorage.getItem('prompts')) || [];
-    prompts = prompts.filter(prompt => prompt.id !== promptId);
-    localStorage.setItem('prompts', JSON.stringify(prompts));
-    loadPrompts();
+    fetch(`http://localhost:8000/composite_prompts/${promptId}`, {
+        'method': 'DELETE',
+    }).then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to delete prompt');
+        }
+
+        let prompts = JSON.parse(localStorage.getItem('prompts')) || [];
+        prompts = prompts.filter(prompt => prompt.id !== promptId);
+        localStorage.setItem('prompts', JSON.stringify(prompts));
+        loadPrompts();
+    }).catch(error => {
+        onsole.error('Error:', error);
+    }
+    )
 };
 
 const closeModal = (modal) => {
