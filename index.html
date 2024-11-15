@@ -14,9 +14,12 @@
         <h1 class="font-semibold" id="prompt-title"></h1>
         <textarea class="px-2 py-2 w-full" name="prompt" id="prompt" cols="80" rows="10"></textarea>
         <div class="flex justify-center">
-            <button class="px-2 py-2 rounded-md bg-green-500 ml-3 text-white" id="askChatGPT">Ask ChatGPT</button>
+            <button class="px-2 py-2 rounded-md bg-green-500 ml-3 text-white" id="askChatGPT">Ask MyAI</button>
             <button class="px-2 py-2 rounded-md bg-blue-500 ml-3 text-white" id="saveNewPrompt">Save as new prompt</button>
             <button class="px-2 py-2 rounded-md bg-red-500 ml-3 text-white" id="showSavedPrompts">View saved prompts</button>
+        </div>
+        <div id="responseContainer" class="relative mt-4 p-4 bg-white rounded-md shadow-md group">
+            
         </div>
     </div>
 
@@ -68,8 +71,6 @@
                       </svg>                      
                 </button>
             </div>
-            <label for="promptTag">Tag:</label>
-            <input type="text" id="promptTag" class="w-full mb-2 p-2 border rounded-md" />
             <label for="promptTitleInput">Title:</label>
             <input type="text" id="promptTitleInput" class="w-full mb-2 p-2 border rounded-md" />
             <label for="promptDescription">Description:</label>

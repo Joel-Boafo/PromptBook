@@ -10,13 +10,16 @@ const promptOptionsDisplay = document.getElementById('prompt-options-display');
 const savePromptModal = document.getElementById('savePromptModal');
 const closeSavePromptModalButton = document.getElementById('closeSavePromptModal');
 const savePromptConfirmButton = document.getElementById('savePromptConfirm');
-const promptTagInput = document.getElementById('promptTag');
 const fieldError = document.getElementById('fieldError');
 const promptTitleInput = document.getElementById('promptTitleInput');
 const promptDescriptionInput = document.getElementById('promptDescription');
 const prevPageButton = document.getElementById('prevPage');
 const nextPageButton = document.getElementById('nextPage');
 const pageInfo = document.getElementById('pageInfo');
+const responseContainer = document.getElementById('responseContainer');
+
+const API_KEY = "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";
+const API_MODEL = "llama3-8b-8192";
 
 let currentPage = 1;
 const itemsPerPage = 5;
@@ -57,30 +60,40 @@ const loadPrompts = () => {
 };
 
 const deletePrompt = (promptId) => {
-    fetch(`http://localhost:8000/composite_prompts/${promptId}`, {
-        'method': 'DELETE',
-    }).then(res => {
-        if (!res.ok) {
-            console.log(`Failed to delete prompt with id ${promptId}`);
-        }
-        let prompts = JSON.parse(localStorage.getItem('prompts')) || [];
-        prompts = prompts.filter(prompt => prompt.id !== promptId);
-        localStorage.setItem('prompts', JSON.stringify(prompts));
-        loadPrompts();
-    }).catch(error => {
-        console.error('Error:', error);
-    });
+    let prompts = JSON.parse(localStorage.getItem('prompts')) || [];
+    prompts = prompts.filter(prompt => prompt.id !== promptId);
+    localStorage.setItem('prompts', JSON.stringify(prompts));
+    loadPrompts();
 };
 
 const closeModal = (modal) => {
     modal.classList.add('hidden');
 };
 
-askButton.addEventListener('click', () => {
+askButton.addEventListener('click', async () => {
     if (promptTextarea.value === '') {
         return null;
     }
-    window.location.href = `https://chat.openai.com/?q=${promptTextarea.value}`;
+
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${API_KEY}`,
+            },
+            body: JSON.stringify({
+                model: API_MODEL,
+                messages: [{ role: "user", content: `${promptTextarea.value}` }],
+            }),
+        });
+
+        const completion = await response.json();
+        const responseText = completion.choices[0].message.content;
+        responseContainer.innerText = responseText;
+    } catch (error) {
+        console.error('Error:', error);
+    }
 });
 
 viewButton.addEventListener('click', () => {
@@ -98,7 +111,6 @@ saveButton.addEventListener('click', () => {
 closeSavePromptModalButton.addEventListener('click', () => closeModal(savePromptModal));
 
 savePromptConfirmButton.addEventListener('click', async () => {
-    const tag = promptTagInput.value;
     const title = promptTitleInput.value;
     const description = promptDescriptionInput.value;
     const content = promptTextarea.value;
@@ -134,7 +146,6 @@ savePromptConfirmButton.addEventListener('click', async () => {
 
         const localPrompt = {
             id: createdPrompt.id,
-            tag,
             title: createdPrompt.title,
             description: createdPrompt.description,
             content,
@@ -148,7 +159,6 @@ savePromptConfirmButton.addEventListener('click', async () => {
         window.location.reload();
     } catch (error) {
         console.error('Error:', error);
-
     }
 });
 
