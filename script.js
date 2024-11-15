@@ -57,10 +57,19 @@ const loadPrompts = () => {
 };
 
 const deletePrompt = (promptId) => {
-    let prompts = JSON.parse(localStorage.getItem('prompts')) || [];
-    prompts = prompts.filter(prompt => prompt.id !== promptId);
-    localStorage.setItem('prompts', JSON.stringify(prompts));
-    loadPrompts();
+    fetch(`http://localhost:8000/composite_prompts/${promptId}`, {
+        'method': 'DELETE',
+    }).then(res => {
+        if (!res.ok) {
+            console.log(`Failed to delete prompt with id ${promptId}`);
+        }
+        let prompts = JSON.parse(localStorage.getItem('prompts')) || [];
+        prompts = prompts.filter(prompt => prompt.id !== promptId);
+        localStorage.setItem('prompts', JSON.stringify(prompts));
+        loadPrompts();
+    }).catch(error => {
+        console.error('Error:', error);
+    });
 };
 
 const closeModal = (modal) => {
@@ -83,11 +92,12 @@ closeModalButton.addEventListener('click', () => closeModal(savedPromptsModal));
 
 saveButton.addEventListener('click', () => {
     savePromptModal.classList.remove('hidden');
+    savePromptConfirmButton.disabled = !promptTextarea.value.trim();
 });
 
 closeSavePromptModalButton.addEventListener('click', () => closeModal(savePromptModal));
 
-savePromptConfirmButton.addEventListener('click', () => {
+savePromptConfirmButton.addEventListener('click', async () => {
     const tag = promptTagInput.value;
     const title = promptTitleInput.value;
     const description = promptDescriptionInput.value;
@@ -102,19 +112,44 @@ savePromptConfirmButton.addEventListener('click', () => {
     }
 
     const newPrompt = {
-        id: Date.now(),
-        tag,
+        author_id: 1,
         title,
         description,
-        content,
     };
 
-    let prompts = JSON.parse(localStorage.getItem('prompts')) || [];
-    prompts.push(newPrompt);
-    localStorage.setItem('prompts', JSON.stringify(prompts));
+    try {
+        const response = await fetch('http://localhost:8000/composite_prompts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(newPrompt),
+        });
 
-    closeModal(savePromptModal);
-    window.location.reload();
+        if (!response.ok) {
+            throw new Error('Failed to create new prompt');
+        }
+
+        const createdPrompt = await response.json();
+
+        const localPrompt = {
+            id: createdPrompt.id,
+            tag,
+            title: createdPrompt.title,
+            description: createdPrompt.description,
+            content,
+        };
+
+        let prompts = JSON.parse(localStorage.getItem('prompts')) || [];
+        prompts.push(localPrompt);
+        localStorage.setItem('prompts', JSON.stringify(prompts));
+
+        closeModal(savePromptModal);
+        window.location.reload();
+    } catch (error) {
+        console.error('Error:', error);
+
+    }
 });
 
 promptTextarea.addEventListener('input', () => {
